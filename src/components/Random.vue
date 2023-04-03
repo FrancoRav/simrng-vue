@@ -43,31 +43,49 @@
         <br>
         <button @click="generateRandomNumbers">Generate Random Numbers</button>
         <br>
-        <keep-alive>
-            <RecycleScroller v-if="generatedNumbers.length > 0" class="scroller" :items="generatedNumbers" :item-size="10"
-                v-slot="{ item }" :prerender="100">
+        <!--<keep-alive>
+            <RecycleScroller v-if="generatedNumbers.length > 0" class="scroller" :items="generatedNumbers" :item-size="30"
+                v-slot="{ item }" :prerender="500">
                 <div class="num">
                     {{ item }}
                 </div>
             </RecycleScroller>
-        </keep-alive>
+        </keep-alive>-->
+        <!--        <span>
+            <Pager class="page" v-if="generatedNumbers.length > 0" :items="generatedNumbers" :items-per-page="10" />
+        </span>-->
         <!--<VirtualList v-if="numsObj.length > 0" :size="50" :remain="20" :dataComponent=functional :dataKey="'value'"
             :dataSources="numsObj">
         </VirtualList>-->
-        <div class="numlist" v-if="generatedNumbers.length > 0">
+        <!--<div class="numlist" v-if="generatedNumbers.length > 0">
             <h2>Generated Numbers:</h2>
             <ul>
-                <li v-for="number in generatedNumbers" :key="number">{{ number }}</li>
+                <li v-for="number in generatedNumbers" :key="number">{{ Math.round(number * 100) / 100 }}</li>
             </ul>
+        </div>-->
+        <br>
+        <label>Intervalos:</label>
+        <input type="number" v-model="intervals">
+        <br>
+        <div class="canvas">
+            <canvas id="histogram"></canvas>
         </div>
     </div>
 </template>
 
 <style>
+.canvas {
+    width: 100%;
+}
+
+canvas {
+    width: 100%;
+}
+
 .form {
     display: flex;
     overflow-x: hidden;
-    overflow: hidden;
+    overflow-y: hidden;
     width: auto;
     flex-direction: column;
     align-items: flex-start;
@@ -80,6 +98,18 @@
     color: #E1E8ED;
 }
 
+.pagenr {
+    float: left;
+    display: block;
+    text-align: center;
+    padding: 4px 16px;
+    text-decoration: none;
+}
+
+.page {
+    width: 100%;
+    height: 200px;
+}
 
 div.numlist {
     width: 100%;
@@ -243,28 +273,112 @@ h2 {
 </style>
 
 <script>
-import { RecycleScroller } from 'vue-virtual-scroller'
+import Chart from 'chart.js/auto';
+import 'chart.js'
+import Pager from './Pager.vue'
 export default {
     data() {
         return {
             distribution: 'normal',
+            intervals: 5,
             seed: 0,
             numGenerated: 10,
             lowerLimit: 0,
             upperLimit: 1,
+            mean: 10,
+            sd: 1,
+            algorithm: 'boxmuller',
+            lambda: 5,
             generatedNumbers: [],
-            numsObj: [],
+            chart: null,
         };
     },
+    mounted() {
+    },
     components: {
-        RecycleScroller
+        Pager
     },
     methods: {
-        generateRandomNumbers() {
-            // Use the values of distribution, seed, numGenerated, lowerLimit, and upperLimit
-            // to generate an array of random numbers using the appropriate distribution.
+        generateHistogram() {
+            if (this.chart) {
+                this.chart.destroy();
+            }
 
-            // For example, to generate an array of normally-distributed random numbers:
+            var min_value = this.generatedNumbers.reduce((a, b) => {
+                return Math.floor(Math.min(a, b));
+            });
+            var max_value = this.generatedNumbers.reduce((a, b) => {
+                return Math.ceil(Math.max(a, b))
+            });
+            console.log(min_value, max_value);
+            var interval_size = (max_value - min_value) / this.intervals;
+            var interval_list = [];
+            var interval = min_value + (interval_size / 2);
+            for (let index = 0; index < this.intervals; index++) {
+                interval_list.push(interval);
+                interval += interval_size;
+            }
+            var interval_data = new Array(this.intervals).fill(0);
+            this.generatedNumbers.forEach(n => {
+                let ind = (n - min_value) / interval_size;
+                if (isNaN(ind)) {
+                    ind = 0;
+                }
+                ++interval_data[Math.floor(ind)];
+            });
+
+            const data = interval_list.map((k, i) => ({ x: k, y: interval_data[i] }));
+
+            const canvas = document.getElementById('histogram');
+            this.chart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    datasets: [{
+                        label: 'Número de Ocurrencias',
+                        data: data,
+                        borderWidth: 1,
+                        barPercentage: 1,
+                        categoryPercentage: 1,
+                        borderRadius: 5,
+                        parsing: false,
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            min: min_value,
+                            max: max_value,
+                            type: 'linear',
+                            offset: false,
+                            grid: {
+                                offset: false,
+                            },
+                            ticks: {
+                                stepSize: interval_size,
+                            },
+                            title: {
+                                display: true,
+                                text: 'Número',
+                                font: {
+                                    size: 14,
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Ocurrencias',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    },
+                }
+            });
+        },
+        generateRandomNumbers() {
             let generatedNumbers = [];
             var myHeaders = new Headers();
             myHeaders.append("Content-Type", "application/json");
@@ -310,11 +424,11 @@ export default {
                 .then(response => response.json())
                 .then(result => {
                     generatedNumbers = result;
-                    console.log(generatedNumbers);
                     this.generatedNumbers = generatedNumbers;
-                    this.numsObj = generatedNumbers.map((num, index) => ({ id: index, value: num }));
+                    this.generateHistogram();
                 })
                 .catch(error => console.log('error', error));
+
         },
     },
 };
