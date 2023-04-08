@@ -299,7 +299,7 @@ export default {
         Pager
     },
     methods: {
-        generateHistogram() {
+        async generateHistogram() {
             if (this.chart) {
                 this.chart.destroy();
             }
@@ -310,24 +310,35 @@ export default {
             var max_value = this.generatedNumbers.reduce((a, b) => {
                 return Math.ceil(Math.max(a, b))
             });
-            console.log(min_value, max_value);
-            var interval_size = (max_value - min_value) / this.intervals;
-            var interval_list = [];
-            var interval = min_value + (interval_size / 2);
-            for (let index = 0; index < this.intervals; index++) {
-                interval_list.push(interval);
-                interval += interval_size;
+            var reqdata = {
+                nums: this.generatedNumbers,
+                lower: min_value,
+                upper: max_value,
+                intervals: this.intervals,
             }
-            var interval_data = new Array(this.intervals).fill(0);
-            this.generatedNumbers.forEach(n => {
-                let ind = (n - min_value) / interval_size;
-                if (isNaN(ind)) {
-                    ind = 0;
-                }
-                ++interval_data[Math.floor(ind)];
-            });
+            var myHeaders = new Headers();
+            myHeaders.append("Content-Type", "application/json");
+            var url = "http://127.0.0.1:3000/api/histogram";
+            var requestOptions = {
+                method: 'POST',
+                headers: myHeaders,
+                redirect: 'follow',
+            };
+            requestOptions.body = JSON.stringify(reqdata);
+            var interval_size = (max_value-min_value)/this.intervals;
+            var interval_list = [];
+            var data_list = [];
+            await fetch(url, requestOptions)
+                .then(response => response.json())
+                .then(result => {
+                    interval_list = result.x;
+                    data_list = result.y;
+                    console.log(interval_list);
+                    console.log(data_list);
+                })
+                .catch(error => console.log('error', error));
 
-            const data = interval_list.map((k, i) => ({ x: k, y: interval_data[i] }));
+            const data = interval_list.map((k, i) => ({ x: k, y: data_list[i] }));
 
             const canvas = document.getElementById('histogram');
             this.chart = new Chart(canvas, {
