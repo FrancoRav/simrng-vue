@@ -41,7 +41,7 @@
             <input type="number" step="0.01" v-model="lambda">
         </span>
         <br>
-        <button @click="generateRandomNumbers">Generate Random Numbers</button>
+        <button class="gen" @click="generateRandomNumbers" :disabled='inprogress'>Generate Random Numbers</button>
         <br>
         <!--<keep-alive>
             <RecycleScroller v-if="generatedNumbers.length > 0" class="scroller" :items="generatedNumbers" :item-size="30"
@@ -66,6 +66,7 @@
         <br>
         <label>Intervalos:</label>
         <input type="number" v-model="intervals">
+        <button class="gen" @click="generateHistogram" :disabled='inprogress'>↻</button>
         <br>
         <div class="canvas">
             <canvas id="histogram"></canvas>
@@ -156,6 +157,17 @@ button {
 button:hover {
     background-color: #0F8BAC;
 }
+
+button:disabled:hover {
+    background-color: #333333;
+}
+
+button:disabled {
+    background-color: #555555;
+    color: #CCCCCC;
+    cursor: default;
+}
+
 
 ul {
     margin: 0;
@@ -279,6 +291,7 @@ import Pager from './Pager.vue'
 export default {
     data() {
         return {
+            isinprogress: false,
             distribution: 'normal',
             intervals: 5,
             seed: 0,
@@ -298,12 +311,25 @@ export default {
     components: {
         Pager
     },
+    computed: {
+        inprogress() {
+            return this.isinprogress == true;
+        }
+    },
     methods: {
+        disableButtons() {
+            this.isinprogress = true;
+        },
+        enableButtons() {
+            this.isinprogress = false;
+        },
         async generateHistogram() {
+            this.disableButtons();
             if (this.chart) {
                 this.chart.destroy();
             }
 
+            var inittime = Date.now();
             var min_value = this.generatedNumbers.reduce((a, b) => {
                 return Math.floor(Math.min(a, b));
             });
@@ -340,6 +366,10 @@ export default {
 
             const data = interval_list.map((k, i) => ({ x: k, y: data_list[i] }));
 
+            var endtime = Date.now();
+            var totaltime = endtime - inittime;
+            console.log(totaltime);
+
             const canvas = document.getElementById('histogram');
             this.chart = new Chart(canvas, {
                 type: 'bar',
@@ -355,6 +385,9 @@ export default {
                     }]
                 },
                 options: {
+                    animation: {
+                        onComplete: this.enableButtons,
+                        },
                     scales: {
                         x: {
                             min: min_value,
@@ -390,6 +423,7 @@ export default {
             });
         },
         generateRandomNumbers() {
+            this.disableButtons();
             let generatedNumbers = [];
             var myHeaders = new Headers();
             myHeaders.append("Content-Type", "application/json");
