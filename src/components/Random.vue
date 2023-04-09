@@ -65,8 +65,10 @@
         </div>-->
         <br>
         <label>Intervalos:</label>
-        <input type="number" v-model="intervals">
-        <button class="gen" @click="generateHistogram" :disabled='inprogress'>↻</button>
+        <div class="histgen">
+            <input type="number" v-model="intervals">
+            <button class="gen" @click="generateHistogram" :disabled='inprogress'>↻</button>
+        </div>
         <br>
         <div class="canvas">
             <canvas id="histogram"></canvas>
@@ -76,6 +78,13 @@
 
 <style>
 .canvas {
+    width: 100%;
+}
+
+.histgen {
+    vertical-align: middle;
+    display: flex;
+    white-space: nowrap;
     width: 100%;
 }
 
@@ -131,6 +140,7 @@ div.form>span {
     width: 100%;
 }
 
+
 input,
 select {
     margin-bottom: 10px;
@@ -144,7 +154,7 @@ select {
 }
 
 button {
-    margin-top: 10px;
+    margin-bottom: 10px;
     padding: 10px;
     background-color: #1DA1F2;
     color: #fff;
@@ -337,7 +347,6 @@ export default {
                 return Math.ceil(Math.max(a, b))
             });
             var reqdata = {
-                nums: this.generatedNumbers,
                 lower: min_value,
                 upper: max_value,
                 intervals: this.intervals,
@@ -351,7 +360,7 @@ export default {
                 redirect: 'follow',
             };
             requestOptions.body = JSON.stringify(reqdata);
-            var interval_size = (max_value-min_value)/this.intervals;
+            var interval_size = (max_value - min_value) / this.intervals;
             var interval_list = [];
             var data_list = [];
             await fetch(url, requestOptions)
@@ -387,7 +396,7 @@ export default {
                 options: {
                     animation: {
                         onComplete: this.enableButtons,
-                        },
+                    },
                     scales: {
                         x: {
                             min: min_value,
@@ -470,10 +479,10 @@ export default {
                 .then(result => {
                     generatedNumbers = result;
                     this.generatedNumbers = generatedNumbers;
+                    console.log(generatedNumbers);
                     this.generateHistogram();
                 })
                 .catch(error => console.log('error', error));
-
         },
     },
 };
