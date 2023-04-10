@@ -67,11 +67,15 @@
         <label>Intervalos:</label>
         <div class="histgen">
             <input type="number" v-model="intervals">
-            <button class="gen" @click="generateHistogram" :disabled='inprogress'>↻</button>
+            <button class="gen" @click="regenIntervals" :disabled='inprogress'>↻</button>
         </div>
         <br>
         <div class="canvas">
             <canvas id="histogram"></canvas>
+        </div>
+        <div class="chi">
+            <p>El chi-cuadrado calculado fue de: {{ Number(chi_calculated).toFixed(2) }}, siendo necesario uno de
+                {{ Number(chi_accepted).toFixed(2) }}</p>
         </div>
     </div>
 </template>
@@ -308,6 +312,8 @@ export default {
             numGenerated: 10,
             lowerLimit: 0,
             upperLimit: 1,
+            chi_calculated: null,
+            chi_accepted: null,
             mean: 10,
             sd: 1,
             algorithm: 'boxmuller',
@@ -333,22 +339,17 @@ export default {
         enableButtons() {
             this.isinprogress = false;
         },
+        regenIntervals() {
+            this.generateHistogram();
+            this.testChiSquared();
+        },
         async generateHistogram() {
             this.disableButtons();
             if (this.chart) {
                 this.chart.destroy();
             }
 
-            var inittime = Date.now();
-            var min_value = this.generatedNumbers.reduce((a, b) => {
-                return Math.floor(Math.min(a, b));
-            });
-            var max_value = this.generatedNumbers.reduce((a, b) => {
-                return Math.ceil(Math.max(a, b))
-            });
             var reqdata = {
-                lower: min_value,
-                upper: max_value,
                 intervals: this.intervals,
             }
             var myHeaders = new Headers();
@@ -360,24 +361,25 @@ export default {
                 redirect: 'follow',
             };
             requestOptions.body = JSON.stringify(reqdata);
-            var interval_size = (max_value - min_value) / this.intervals;
+            var interval_size = 0;
             var interval_list = [];
             var data_list = [];
+            var min_value = 0;
+            var max_value = 0;
             await fetch(url, requestOptions)
                 .then(response => response.json())
                 .then(result => {
                     interval_list = result.x;
                     data_list = result.y;
+                    interval_size = result.size;
+                    min_value = result.lower;
+                    max_value = result.upper;
                     console.log(interval_list);
                     console.log(data_list);
                 })
                 .catch(error => console.log('error', error));
 
             const data = interval_list.map((k, i) => ({ x: k, y: data_list[i] }));
-
-            var endtime = Date.now();
-            var totaltime = endtime - inittime;
-            console.log(totaltime);
 
             const canvas = document.getElementById('histogram');
             this.chart = new Chart(canvas, {
@@ -431,6 +433,33 @@ export default {
                 }
             });
         },
+        async testChiSquared() {
+            var reqdata = {
+                intervals: this.intervals,
+            }
+            var myHeaders = new Headers();
+            myHeaders.append("Content-Type", "application/json");
+            var url = "http://127.0.0.1:3000/api/chisquared";
+            var requestOptions = {
+                method: 'POST',
+                headers: myHeaders,
+                redirect: 'follow',
+            };
+            requestOptions.body = JSON.stringify(reqdata);
+            var chi_calculated = null;
+            var chi_accepted = null;
+            await fetch(url, requestOptions)
+                .then(response => response.json())
+                .then(result => {
+                    chi_calculated = result.calculated;
+                    chi_accepted = result.expected;
+                    this.chi_calculated = chi_calculated;
+                    this.chi_accepted = chi_accepted;
+                    console.log(chi_calculated);
+                    console.log(chi_accepted);
+                })
+                .catch(error => console.log('error', error));
+        },
         generateRandomNumbers() {
             this.disableButtons();
             let generatedNumbers = [];
@@ -475,12 +504,10 @@ export default {
             }
             requestOptions.body = JSON.stringify(data);
             fetch(url, requestOptions)
-                .then(response => response.json())
-                .then(result => {
-                    generatedNumbers = result;
-                    this.generatedNumbers = generatedNumbers;
-                    console.log(generatedNumbers);
-                    this.generateHistogram();
+                .then(response => {
+                    if (response.ok) {
+                        this.regenIntervals();
+                    }
                 })
                 .catch(error => console.log('error', error));
         },
