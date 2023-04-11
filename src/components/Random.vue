@@ -462,7 +462,6 @@ export default {
         },
         generateRandomNumbers() {
             this.disableButtons();
-            let generatedNumbers = [];
             var myHeaders = new Headers();
             myHeaders.append("Content-Type", "application/json");
             var url = "http://127.0.0.1:3000/api/";
@@ -471,37 +470,37 @@ export default {
                 headers: myHeaders,
                 redirect: 'follow',
             };
-            if (this.distribution === 'normal') {
-                (this.algorithm == "boxmuller" ? url += "normal-bm" : url += "normal-conv");
-                var data = {
+            var data = {
                     seed: this.seed,
                     number: this.numGenerated,
+                }
+            var dist;
+            if (this.distribution === 'normal') {
+                data.distribution = "Normal";
+                dist = {
                     mean: this.mean,
-                    sd: this.sd
+                    sd: this.sd,
+                    algorithm: this.algorithm == "boxmuller" ? "BoxMuller" : "Convolution",
+                    pair: null
                 };
             } else if (this.distribution === 'uniform') {
-                url += "uniform";
-                var data = {
-                    seed: this.seed,
-                    number: this.numGenerated,
+                data.distribution = "Uniform";
+                dist = {
                     lower: this.lowerLimit,
                     upper: this.upperLimit
                 };
             } else if (this.distribution === 'exponential') {
-                url += "exponential";
-                var data = {
-                    seed: this.seed,
-                    number: this.numGenerated,
+                data.distribution = "Exponential";
+                dist = {
                     lambda: this.lambda
                 };
             } else if (this.distribution === 'poisson') {
-                url += "poisson";
-                var data = {
-                    seed: this.seed,
-                    number: this.numGenerated,
+                data.distribution = "Poisson";
+                dist = {
                     lambda: this.lambda
                 };
             }
+            data.data = dist;
             requestOptions.body = JSON.stringify(data);
             fetch(url, requestOptions)
                 .then(response => {
