@@ -464,7 +464,7 @@ export default {
             this.disableButtons();
             var myHeaders = new Headers();
             myHeaders.append("Content-Type", "application/json");
-            var url = "http://127.0.0.1:3000/api/";
+            var url = "http://127.0.0.1:3000/api/generate";
             var requestOptions = {
                 method: 'POST',
                 headers: myHeaders,
