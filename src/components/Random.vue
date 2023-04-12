@@ -41,7 +41,7 @@
             <input type="number" step="0.01" v-model="lambda">
         </span>
         <br>
-        <button class="gen" @click="generateRandomNumbers" :disabled='inprogress'>Generate Random Numbers</button>
+        <button class="gen" @click="generateRandomNumbers" :disabled='inprogress'>Generar Números Aleatorios</button>
         <br>
         <!--<keep-alive>
             <RecycleScroller v-if="generatedNumbers.length > 0" class="scroller" :items="generatedNumbers" :item-size="30"
