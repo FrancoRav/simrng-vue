@@ -442,7 +442,7 @@ export default {
                 }
             });
 
-            },
+        },
         async generateHistogram() {
             this.disableButtons();
             if (this.chart) {
@@ -571,9 +571,9 @@ export default {
                 redirect: 'follow',
             };
             var data = {
-                    seed: this.seed,
-                    number: this.numGenerated,
-                }
+                seed: this.seed,
+                number: this.numGenerated,
+            }
             var dist;
             if (this.distribution === 'normal') {
                 data.distribution = "Normal";
@@ -607,8 +607,13 @@ export default {
                     if (response.ok) {
                         this.regenIntervals();
                     }
+                    else {
+                        this.enableButtons();
+                    }
                 })
-                .catch(error => console.log('error', error));
+                .catch(error => {
+                    console.log(error);
+                });
         },
     },
 };
