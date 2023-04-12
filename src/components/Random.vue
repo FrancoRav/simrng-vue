@@ -340,9 +340,109 @@ export default {
             this.isinprogress = false;
         },
         regenIntervals() {
-            this.generateHistogram();
-            this.testChiSquared();
+            this.getStatistics();
         },
+        async getStatistics() {
+            this.disableButtons();
+            if (this.chart) {
+                this.chart.destroy();
+            }
+
+            var reqdata = {
+                intervals: this.intervals,
+            }
+            var myHeaders = new Headers();
+            myHeaders.append("Content-Type", "application/json");
+            var url = "http://127.0.0.1:3000/api/statistics";
+            var requestOptions = {
+                method: 'POST',
+                headers: myHeaders,
+                redirect: 'follow',
+            };
+            requestOptions.body = JSON.stringify(reqdata);
+            var interval_size = 0;
+            var interval_list = [];
+            var data_list = [];
+            var min_value = 0;
+            var max_value = 0;
+            var chi_calculated = 0;
+            var chi_accepted = 0;
+            await fetch(url, requestOptions)
+                .then(response => response.json())
+                .then(result => {
+                    var histogram = result.histogram;
+                    interval_list = histogram.x;
+                    data_list = histogram.y;
+                    interval_size = histogram.size;
+                    min_value = histogram.lower;
+                    max_value = histogram.upper;
+                    var test = result.test;
+                    chi_calculated = test.calculated;
+                    chi_accepted = test.expected;
+                    this.chi_calculated = chi_calculated;
+                    this.chi_accepted = chi_accepted;
+                    console.log(chi_calculated);
+                    console.log(chi_accepted);
+                    console.log(interval_list);
+                    console.log(data_list);
+                })
+                .catch(error => console.log('error', error));
+
+            const data = interval_list.map((k, i) => ({ x: k, y: data_list[i] }));
+
+            const canvas = document.getElementById('histogram');
+            this.chart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    datasets: [{
+                        label: 'Número de Ocurrencias',
+                        data: data,
+                        borderWidth: 1,
+                        barPercentage: 1,
+                        categoryPercentage: 1,
+                        borderRadius: 5,
+                        parsing: false,
+                    }]
+                },
+                options: {
+                    animation: {
+                        onComplete: this.enableButtons,
+                    },
+                    scales: {
+                        x: {
+                            min: min_value,
+                            max: max_value,
+                            type: 'linear',
+                            offset: false,
+                            grid: {
+                                offset: false,
+                            },
+                            ticks: {
+                                stepSize: interval_size,
+                            },
+                            title: {
+                                display: true,
+                                text: 'Número',
+                                font: {
+                                    size: 14,
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Ocurrencias',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    },
+                }
+            });
+
+            },
         async generateHistogram() {
             this.disableButtons();
             if (this.chart) {
