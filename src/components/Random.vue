@@ -296,6 +296,49 @@ h2 {
 ::-moz-scrollbar-thumb:hover {
     background-color: #999999;
 }
+
+.table-container {
+    width: 100%;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+th,
+td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #38444D;
+    color: #E1E8ED;
+}
+
+th {
+    background-color: #15202B;
+    text-transform: uppercase;
+    font-size: 16px;
+}
+
+tr:nth-child(even) {
+    background-color: #253341;
+}
+
+tr:nth-child(odd) {
+    background-color: #15202B;
+}
+
+tr:hover {
+    background-color: #1DA1F2;
+    color: #fff;
+}
+
+.table-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+}
 </style>
 
 <script>
