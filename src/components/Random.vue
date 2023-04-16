@@ -378,9 +378,11 @@ export default {
                     max_value = histogram.upper;
                     var test = result.test;
                     chi_calculated = test.calculated;
-                    chi_accepted = test.expected;
+                    chi_accepted = test.critical;
+                    var chi_table = test.intervals;
                     this.chi_calculated = chi_calculated;
                     this.chi_accepted = chi_accepted;
+                    console.table(chi_table);
                     console.log(chi_calculated);
                     console.log(chi_accepted);
                     console.log(interval_list);
@@ -552,7 +554,7 @@ export default {
                 .then(response => response.json())
                 .then(result => {
                     chi_calculated = result.calculated;
-                    chi_accepted = result.expected;
+                    chi_accepted = result.critical;
                     this.chi_calculated = chi_calculated;
                     this.chi_accepted = chi_accepted;
                     console.log(chi_calculated);
