@@ -488,6 +488,7 @@ export default {
             });
 
         },
+
         async generateHistogram() {
             this.disableButtons();
             if (this.chart) {
@@ -605,6 +606,7 @@ export default {
                 })
                 .catch(error => console.log('error', error));
         },
+
         generateRandomNumbers() {
             this.disableButtons();
             var myHeaders = new Headers();
