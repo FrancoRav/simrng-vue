@@ -435,6 +435,10 @@ export default {
 
             const data = interval_list.map((k, i) => ({ x: k, y: data_list[i] }));
 
+            this.generateHistogram(data, min_value, max_value, interval_size);
+        },
+
+        async generateHistogram(data, min_value, max_value, interval_size) {
             const canvas = document.getElementById('histogram');
             this.chart = new Chart(canvas, {
                 type: 'bar',
@@ -486,125 +490,6 @@ export default {
                     },
                 }
             });
-
-        },
-
-        async generateHistogram() {
-            this.disableButtons();
-            if (this.chart) {
-                this.chart.destroy();
-            }
-
-            var reqdata = {
-                intervals: this.intervals,
-            }
-            var myHeaders = new Headers();
-            myHeaders.append("Content-Type", "application/json");
-            var url = "http://127.0.0.1:3000/api/histogram";
-            var requestOptions = {
-                method: 'POST',
-                headers: myHeaders,
-                redirect: 'follow',
-            };
-            requestOptions.body = JSON.stringify(reqdata);
-            var interval_size = 0;
-            var interval_list = [];
-            var data_list = [];
-            var min_value = 0;
-            var max_value = 0;
-            await fetch(url, requestOptions)
-                .then(response => response.json())
-                .then(result => {
-                    interval_list = result.x;
-                    data_list = result.y;
-                    interval_size = result.size;
-                    min_value = result.lower;
-                    max_value = result.upper;
-                    console.log(interval_list);
-                    console.log(data_list);
-                })
-                .catch(error => console.log('error', error));
-
-            const data = interval_list.map((k, i) => ({ x: k, y: data_list[i] }));
-
-            const canvas = document.getElementById('histogram');
-            this.chart = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    datasets: [{
-                        label: 'Número de Ocurrencias',
-                        data: data,
-                        borderWidth: 1,
-                        barPercentage: 1,
-                        categoryPercentage: 1,
-                        borderRadius: 5,
-                        parsing: false,
-                    }]
-                },
-                options: {
-                    animation: {
-                        onComplete: this.enableButtons,
-                    },
-                    scales: {
-                        x: {
-                            min: min_value,
-                            max: max_value,
-                            type: 'linear',
-                            offset: false,
-                            grid: {
-                                offset: false,
-                            },
-                            ticks: {
-                                stepSize: interval_size,
-                            },
-                            title: {
-                                display: true,
-                                text: 'Número',
-                                font: {
-                                    size: 14,
-                                }
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Ocurrencias',
-                                font: {
-                                    size: 14
-                                }
-                            }
-                        }
-                    },
-                }
-            });
-        },
-        async testChiSquared() {
-            var reqdata = {
-                intervals: this.intervals,
-            }
-            var myHeaders = new Headers();
-            myHeaders.append("Content-Type", "application/json");
-            var url = "http://127.0.0.1:3000/api/chisquared";
-            var requestOptions = {
-                method: 'POST',
-                headers: myHeaders,
-                redirect: 'follow',
-            };
-            requestOptions.body = JSON.stringify(reqdata);
-            var chi_calculated = null;
-            var chi_accepted = null;
-            await fetch(url, requestOptions)
-                .then(response => response.json())
-                .then(result => {
-                    chi_calculated = result.calculated;
-                    chi_accepted = result.critical;
-                    this.chi_calculated = chi_calculated;
-                    this.chi_accepted = chi_accepted;
-                    console.log(chi_calculated);
-                    console.log(chi_accepted);
-                })
-                .catch(error => console.log('error', error));
         },
 
         generateRandomNumbers() {
