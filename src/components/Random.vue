@@ -43,45 +43,44 @@
         <br>
         <button class="gen" @click="generateRandomNumbers" :disabled='inprogress'>Generar Números Aleatorios</button>
         <br>
-        <!--<keep-alive>
-            <RecycleScroller v-if="generatedNumbers.length > 0" class="scroller" :items="generatedNumbers" :item-size="30"
-                v-slot="{ item }" :prerender="500">
-                <div class="num">
-                    {{ item }}
-                </div>
-            </RecycleScroller>
-        </keep-alive>-->
-        <!--        <span>
-            <Pager class="page" v-if="generatedNumbers.length > 0" :items="generatedNumbers" :items-per-page="10" />
-        </span>-->
-        <!--<VirtualList v-if="numsObj.length > 0" :size="50" :remain="20" :dataComponent=functional :dataKey="'value'"
-            :dataSources="numsObj">
-        </VirtualList>-->
-        <!--<div class="numlist" v-if="generatedNumbers.length > 0">
-            <h2>Generated Numbers:</h2>
-            <ul>
-                <li v-for="number in generatedNumbers" :key="number">{{ Math.round(number * 100) / 100 }}</li>
-            </ul>
-        </div>-->
-        <br>
         <label>Intervalos:</label>
         <div class="histgen">
             <input type="number" v-model="intervals">
+            <select v-model="significance">
+                <option value=1>0.001</option>
+                <option value=2>0.01</option>
+                <option value=3>0.025</option>
+                <option value=4>0.05</option>
+                <option value=5>0.1</option>
+                <option value=6>0.9</option>
+                <option value=7>0.95</option>
+                <option value=8>0.975</option>
+                <option value=9>0.99</option>
+                <option value=10>0.999</option>
+            </select>
             <button class="gen" @click="regenIntervals" :disabled='inprogress'>↻</button>
         </div>
         <br>
-        <div class="canvas">
-            <canvas id="histogram"></canvas>
-        </div>
-        <div class="chi">
-            <p>El chi-cuadrado calculado fue de: {{ Number(chi_calculated).toFixed(2) }}, siendo necesario uno de
+        <div class="results" v-if="generated">
+            <Pager class="page" v-if="generated" :totalPages="Math.ceil(generatedNumbers/30)" />
+            <br>
+            <div class="canvas">
+                <canvas id="histogram"></canvas>
+            </div>
+            <div class="chi">
+                <p>El chi-cuadrado calculado fue de: {{ Number(chi_calculated).toFixed(2) }}, siendo necesario uno de
                 {{ Number(chi_accepted).toFixed(2) }}</p>
+            </div>
         </div>
     </div>
 </template>
 
 <style>
 .canvas {
+    width: 100%;
+}
+
+.results {
     width: 100%;
 }
 
@@ -120,11 +119,9 @@ canvas {
     text-decoration: none;
 }
 
-.page {
+div.page {
     width: 100%;
-    height: 200px;
 }
-
 div.numlist {
     width: 100%;
 }
@@ -187,7 +184,6 @@ ul {
     margin: 0;
     padding: 0;
     list-style: none;
-    max-height: 200px;
     /* add a fixed max-height for the panel */
     overflow-y: auto;
     /* add scrollbars when the content exceeds the panel's height */
@@ -349,8 +345,10 @@ export default {
     data() {
         return {
             isinprogress: false,
+            generated: false,
             distribution: 'normal',
             intervals: 5,
+            significance: 7,
             seed: 0,
             numGenerated: 10,
             lowerLimit: 0,
@@ -361,7 +359,7 @@ export default {
             sd: 1,
             algorithm: 'boxmuller',
             lambda: 5,
-            generatedNumbers: [],
+            generatedNumbers: 0,
             chart: null,
         };
     },
@@ -393,7 +391,9 @@ export default {
 
             var reqdata = {
                 intervals: this.intervals,
+                significance: Number(this.significance),
             }
+            console.log(reqdata);
             var myHeaders = new Headers();
             myHeaders.append("Content-Type", "application/json");
             var url = "http://127.0.0.1:3000/api/statistics";
@@ -534,9 +534,12 @@ export default {
             }
             data.data = dist;
             requestOptions.body = JSON.stringify(data);
+            this.generatedNumbers = this.numGenerated;
+            this.generated = false;
             fetch(url, requestOptions)
                 .then(response => {
                     if (response.ok) {
+                        this.generated = true;
                         this.regenIntervals();
                     }
                     else {
