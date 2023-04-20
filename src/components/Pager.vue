@@ -20,7 +20,7 @@
             </ul>
         </nav>
         <ul>
-            <li v-for="item in displayedItems">{{ item }}</li>
+            <li v-for="item in displayedItems">{{ formatNumber(item) }}</li>
         </ul>
     </div>
 </template>
@@ -117,7 +117,15 @@ export default {
         },
         changePage(pageNumber) {
             this.currentPage = pageNumber;
-        }
+        },
+        formatNumber(number) {
+            let formattedNumber = parseFloat(number.toFixed(3)).toString(); // Convert number to string and remove trailing zeros
+            if (formattedNumber.includes('.')) {
+                return formattedNumber; // Return with decimal part if present
+            } else {
+                return formattedNumber.replace('.', ''); // Remove decimal point if no decimal part
+            }
+        },
     }
 }
 </script>
