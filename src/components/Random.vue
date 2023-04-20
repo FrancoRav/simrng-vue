@@ -8,9 +8,6 @@
             <option value="poisson">Poisson</option>
         </select>
         <br>
-        <label>Semilla (x0):</label>
-        <input type="number" v-model="seed">
-        <br>
         <label>Cantidad:</label>
         <input type="number" v-model="numGenerated">
         <span v-if="distribution == 'uniform'">
@@ -43,20 +40,22 @@
         <br>
         <button class="gen" @click="generateRandomNumbers" :disabled='inprogress'>Generar Números Aleatorios</button>
         <br>
-        <label>Intervalos:</label>
+        <label v-if="distribution != 'poisson'">Intervalos:</label>
+        <input v-if="distribution != 'poisson'" type="number" v-model="intervals">
+        <label>Significancia:</label>
         <div class="histgen">
-            <input type="number" v-model="intervals">
+            <br>
             <select v-model="significance">
-                <option value=1>0.001</option>
-                <option value=2>0.01</option>
-                <option value=3>0.025</option>
-                <option value=4>0.05</option>
-                <option value=5>0.1</option>
-                <option value=6>0.9</option>
-                <option value=7>0.95</option>
-                <option value=8>0.975</option>
-                <option value=9>0.99</option>
-                <option value=10>0.999</option>
+                <option value=10>0.001</option>
+                <option value=9>0.01</option>
+                <option value=8>0.025</option>
+                <option value=7>0.05</option>
+                <option value=6>0.1</option>
+                <option value=5>0.9</option>
+                <option value=4>0.95</option>
+                <option value=3>0.975</option>
+                <option value=2>0.99</option>
+                <option value=1>0.999</option>
             </select>
             <button class="gen" @click="regenIntervals" :disabled='inprogress'>↻</button>
         </div>
@@ -68,8 +67,34 @@
                 <canvas id="histogram"></canvas>
             </div>
             <div class="chi">
-                <p>El chi-cuadrado calculado fue de: {{ Number(chi_calculated).toFixed(2) }}, siendo necesario uno de
-                {{ Number(chi_accepted).toFixed(2) }}</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Desde</th>
+                            <th>Hasta</th>
+                            <th>fo</th>
+                            <th>fe</th>
+                            <th>c</th>
+                            <th>c(AC)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(interval, index) in chi_table" :key="index">
+                            <td>{{index+1}}</td>
+                            <td>{{formatNumber(interval.lower)}}</td>
+                            <td>{{formatNumber(interval.upper)}}</td>
+                            <td>{{interval.fo}}</td>
+                            <td>{{formatNumber(interval.fe)}}</td>
+                            <td>{{formatNumber(interval.c)}}</td>
+                            <td>{{formatNumber(interval.c_ac)}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>El chi-cuadrado calculado fue de {{formatNumber(Number(chi_calculated))}}, mientras que el valor crítico es de
+                {{formatNumber(Number(chi_accepted))}}.</p>
+                <p v-if="Number(chi_accepted) < Number(chi_calculated)">Por lo tanto, se rechaza la hipótesis de que la distribución es una {{ distribution_string }}</p>
+                <p v-if="Number(chi_accepted) > Number(chi_calculated)">Por lo tanto, no se puede rechazar la hipótesis de que la distribución es una {{ distribution_string }}</p>
             </div>
         </div>
     </div>
@@ -87,7 +112,6 @@
 .histgen {
     vertical-align: middle;
     display: flex;
-    white-space: nowrap;
     width: 100%;
 }
 
@@ -355,7 +379,14 @@ export default {
             upperLimit: 1,
             chi_calculated: null,
             chi_accepted: null,
+            chi_table: null,
             mean: 10,
+            last_mean: null,
+            last_sd: null,
+            last_lower: null,
+            last_upper: null,
+            last_lambda: null,
+            last_dist: null,
             sd: 1,
             algorithm: 'boxmuller',
             lambda: 5,
@@ -371,6 +402,18 @@ export default {
     computed: {
         inprogress() {
             return this.isinprogress == true;
+        },
+        distribution_string() {
+            switch (this.last_dist) {
+                case 'normal':
+                    return "Normal con media " + this.last_mean + " y desviación estándar " + this.last_sd ;
+                case 'exponential':
+                    return "Exponencial con lambda " + this.last_lambda;
+                case 'poisson':
+                    return "Poisson con lambda " + this.last_lambda;
+                case 'uniform':
+                    return "Uniforme entre " + this.last_lower + " y " + this.last_upper ;
+            }
         }
     },
     methods: {
@@ -425,6 +468,7 @@ export default {
                     var chi_table = test.intervals;
                     this.chi_calculated = chi_calculated;
                     this.chi_accepted = chi_accepted;
+                    this.chi_table = chi_table;
                     console.table(chi_table);
                     console.log(chi_calculated);
                     console.log(chi_accepted);
@@ -491,7 +535,14 @@ export default {
                 }
             });
         },
-
+        formatNumber(number) {
+            let formattedNumber = parseFloat(number.toFixed(3)).toString(); // Convert number to string and remove trailing zeros
+            if (formattedNumber.includes('.')) {
+                return formattedNumber; // Return with decimal part if present
+            } else {
+                return formattedNumber.replace('.', ''); // Remove decimal point if no decimal part
+            }
+        },
         generateRandomNumbers() {
             this.disableButtons();
             var myHeaders = new Headers();
@@ -536,6 +587,11 @@ export default {
             requestOptions.body = JSON.stringify(data);
             this.generatedNumbers = this.numGenerated;
             this.generated = false;
+            this.last_dist = this.distribution;
+            this.last_mean = this.mean;
+            this.last_sd = this.sd;
+            this.last_lower = this.lowerLimit;
+            this.last_upper = this.upperLimit;
             fetch(url, requestOptions)
                 .then(response => {
                     if (response.ok) {
