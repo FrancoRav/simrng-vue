@@ -592,6 +592,7 @@ export default {
             this.last_sd = this.sd;
             this.last_lower = this.lowerLimit;
             this.last_upper = this.upperLimit;
+            this.last_lambda = this.lambda;
             fetch(url, requestOptions)
                 .then(response => {
                     if (response.ok) {
