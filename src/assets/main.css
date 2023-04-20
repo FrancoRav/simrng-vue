@@ -2,12 +2,17 @@
 
 #app {
   width: 100%;
-  margin: 0 30%;
-  padding: 2rem;
+  margin: 0 20%;
+  padding: 0rem;
 
   overflow: hidden;
 
   font-weight: normal;
+}
+
+#app > div {
+    max-width: 650px;
+    margin: auto;
 }
 
 a,
@@ -32,4 +37,16 @@ a,
   #app {
     padding: 0 2rem;
   }
+}
+
+@media (max-width: 1023px) {
+  body {
+    display: flex;
+    place-items: center;
+  }
+
+    #app {
+        margin: 0;
+        padding: 0 2rem;
+    }
 }
