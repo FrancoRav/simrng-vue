@@ -90,8 +90,8 @@
                     <tbody>
                         <tr v-for="(interval, index) in chi_table" :key="index">
                             <td>{{index+1}}</td>
-                            <td>{{formatNumber(interval.lower)}}</td>
-                            <td>{{formatNumber(interval.upper)}}</td>
+                            <td>{{(index == 0 && last_dist == "normal") ? "-∞" : formatNumber(interval.lower)}}</td>
+                            <td>{{(index == chi_table.length-1 && (last_dist == "normal" || last_dist == "exponential" || last_dist == "poisson")) ? "∞" : formatNumber(interval.upper)}}</td>
                             <td>{{interval.fo}}</td>
                             <td>{{formatNumber(interval.fe)}}</td>
                             <td>{{formatNumber(interval.c)}}</td>
