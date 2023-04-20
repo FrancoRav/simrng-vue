@@ -32,10 +32,18 @@
                 <option value="convolution">Convolution</option>
             </select>
         </span>
-        <span v-if="distribution == 'exponential' || distribution == 'poisson'">
+        <span v-if="distribution == 'poisson'">
             <br>
             <label>Lambda <span>λ</span>:</label>
             <input type="number" step="0.01" v-model="lambda">
+        </span>
+        <span v-if="distribution == 'exponential'">
+            <br>
+            <label>Lambda <span>λ</span>:</label>
+            <input type="number" step="0.01" v-model="lambda">
+            <br>
+            <label>Media:</label>
+            <input type="number" step="0.01" v-model="expmean">
         </span>
         <br>
         <button class="gen" @click="generateRandomNumbers" :disabled='inprogress'>Generar Números Aleatorios</button>
@@ -363,11 +371,14 @@ tr:hover {
 
 <script>
 import Chart from 'chart.js/auto';
-import 'chart.js'
-import Pager from './Pager.vue'
+import 'chart.js';
+import Pager from './Pager.vue';
+import useValidate from '@vuelidate/core';
+import { required, minValue, requiredIf } from '@vuelidate/validators';
 export default {
     data() {
         return {
+            v$: useValidate(),
             isinprogress: false,
             generated: false,
             distribution: 'normal',
@@ -381,6 +392,7 @@ export default {
             chi_accepted: null,
             chi_table: null,
             mean: 10,
+            expmean: "",
             last_mean: null,
             last_sd: null,
             last_lower: null,
@@ -414,6 +426,21 @@ export default {
                 case 'uniform':
                     return "Uniforme entre " + this.last_lower + " y " + this.last_upper ;
             }
+        }
+    },
+    validations() {
+        return {
+            distribution: { required },
+            numGenerated: { required, minValue: minValue(1) },
+            intervals: { required, minValue: minValue(1) },
+            significance: { required },
+            mean: { required: requiredIf(this.distribution == "normal") },
+            sd: { required: requiredIf(this.distribution == "normal"), minValue: minValue(this.distribution == "normal" ? 0 : -Infinity) },
+            lambda: { requiredPoi: requiredIf(this.distribution == "poisson"),
+                    requiredExp: requiredIf(this.distribution == "exponential" && this.expmean == "")},
+            expmean: { required: requiredIf(this.distribution == "exponential" && this.lambda == "")},
+            lowerLimit: { required: requiredIf(this.distribution == "uniform")},
+            upperLimit: { required: requiredIf(this.distribution == "uniform"), minValue: minValue(this.distribution == "uniform" ? this.lowerLimit : -Infinity)},
         }
     },
     methods: {
@@ -544,6 +571,12 @@ export default {
             }
         },
         generateRandomNumbers() {
+            this.v$.$validate();
+            if (this.v$.$error) {
+                alert('Verifique los campos e intente nuevamente');
+                console.log(this.v$.$errors);
+                return;
+            }
             this.disableButtons();
             var myHeaders = new Headers();
             myHeaders.append("Content-Type", "application/json");
@@ -574,8 +607,15 @@ export default {
                 };
             } else if (this.distribution === 'exponential') {
                 data.distribution = "Exponential";
+                let paramlambda;
+                if (this.lambda == "") {
+                    paramlambda = 1/this.expmean;
+                }
+                else {
+                    paramlambda = this.lambda;
+                }
                 dist = {
-                    lambda: this.lambda
+                    lambda: paramlambda
                 };
             } else if (this.distribution === 'poisson') {
                 data.distribution = "Poisson";
